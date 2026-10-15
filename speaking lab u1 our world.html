@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Speaking Practice — English Lab</title>
+<style>
+  :root{
+    --forest:#4a5d23; --forest-dark:#2f3d14; --terracotta:#c1502e; --terracotta-dark:#8a3719;
+    --cream:#f5f1e8; --cream-dark:#e8dfc9; --gold:#d4a574; --gold-dark:#a67c4a;
+    --green-ok:#2d6a4f; --green-light:#e8f5ee; --red-bad:#9d2b1f; --red-light:#f8e5e0;
+    --yellow-mid:#d4a017; --yellow-light:#fdf6e3;
+    --ink:#2b2b2b; --muted:#7a7566; --card:#fdfcf8;
+    --shadow:0 8px 24px rgba(74,93,35,0.15);
+    --radius:16px;
+    font-family:'Segoe UI',system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--cream);color:var(--ink);}
+  body{min-height:100vh;}
+
+  /* HEADER */
+  header.topbar{background:linear-gradient(135deg,var(--forest-dark) 0%, var(--forest) 100%);color:#fff;padding:16px 18px 12px;position:sticky;top:0;z-index:50;box-shadow:0 4px 18px rgba(0,0,0,.3);}
+  .topbar-inner{max-width:1100px;margin:0 auto;}
+  .badge{display:inline-block;background:var(--terracotta);color:#fff;font-size:11px;font-weight:700;letter-spacing:1px;padding:5px 12px;border-radius:20px;text-transform:uppercase;margin-bottom:8px;}
+  header.topbar h1{margin:0 0 4px;font-size:clamp(18px,3.6vw,26px);}
+  header.topbar p{margin:0 0 12px;color:#d4c9a8;font-size:13px;}
+  nav.phasenav{display:flex;gap:6px;flex-wrap:wrap;}
+  nav.phasenav button{flex:1 1 100px;background:rgba(255,255,255,0.08);border:1px solid rgba(212,165,116,0.3);color:#e8dfc9;padding:8px 6px;border-radius:10px;font-size:10.5px;font-weight:600;cursor:pointer;transition:.2s;text-align:center;}
+  nav.phasenav button .num{display:block;font-size:9px;font-weight:800;color:var(--gold);letter-spacing:1px;margin-bottom:2px;}
+  nav.phasenav button.active{background:var(--terracotta);border-color:var(--terracotta);color:#fff;}
+  nav.phasenav button:hover:not(.active){background:rgba(212,165,116,0.2);}
+  .progress-outer{height:6px;background:rgba(212,165,116,0.25);border-radius:6px;margin-top:10px;overflow:hidden;}
+  .progress-inner{height:100%;width:0%;background:linear-gradient(90deg,var(--gold),var(--terracotta));transition:width .4s ease;}
+
+  main{max-width:1100px;margin:0 auto;padding:26px 18px 70px;}
+  .phase{display:none;animation:fadeIn .4s ease;}
+  .phase.active{display:block;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+  .phase-title{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
+  .phase-title .bar{width:5px;height:26px;background:var(--terracotta);border-radius:3px;}
+  .phase-title h2{margin:0;font-size:clamp(19px,3.2vw,25px);color:var(--forest-dark);}
+  .phase-sub{color:var(--muted);margin:0 0 22px;font-size:14.5px;max-width:760px;}
+
+  /* SPEAK CARD */
+  .sp-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:28px 24px;max-width:760px;margin:0 auto;border:1px solid var(--cream-dark);text-align:center;}
+  .sp-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;}
+  .sp-num{font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.5px;background:var(--cream);padding:5px 12px;border-radius:20px;}
+  .sp-score-box{display:flex;gap:14px;align-items:center;background:var(--cream);padding:6px 16px;border-radius:20px;font-weight:800;font-size:13px;}
+  .sp-score-box .good{color:var(--green-ok);}
+  .sp-score-box .bad{color:var(--red-bad);}
+
+  .sp-context{background:var(--cream);border-left:4px solid var(--terracotta);border-radius:8px;padding:10px 14px;margin-bottom:16px;text-align:left;font-size:12px;color:var(--forest-dark);font-weight:700;letter-spacing:.5px;text-transform:uppercase;}
+  .sp-context strong{color:var(--terracotta-dark);}
+
+  .sp-hint-label{font-size:11px;color:var(--muted);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;}
+
+  .sp-target{font-size:clamp(20px,3.5vw,30px);font-weight:800;color:var(--forest-dark);margin:8px 0 16px;line-height:1.4;min-height:40px;}
+
+  /* WORD CHIPS */
+  .word-chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:14px 0 20px;min-height:36px;}
+  .word-chip{padding:6px 12px;border-radius:20px;font-size:14px;font-weight:700;background:var(--cream-dark);color:var(--muted);transition:.3s;border:2px solid transparent;}
+  .word-chip.correct{background:var(--green-light);color:var(--green-ok);border-color:var(--green-ok);}
+  .word-chip.missed{background:var(--red-light);color:var(--red-bad);border-color:var(--red-bad);}
+  .word-chip.partial{background:var(--yellow-light);color:var(--yellow-mid);border-color:var(--yellow-mid);}
+  .word-chip.pending{background:var(--cream-dark);color:var(--muted);}
+
+  /* CONTROLS */
+  .sp-controls{display:flex;justify-content:center;gap:16px;align-items:center;margin-bottom:14px;flex-wrap:wrap;}
+  .listen-btn{width:60px;height:60px;border-radius:50%;background:var(--forest);color:#fff;border:none;font-size:24px;cursor:pointer;box-shadow:0 6px 18px rgba(74,93,35,.35);transition:.15s;}
+  .listen-btn:hover{transform:scale(1.08);background:var(--terracotta);}
+  .mic-btn{width:80px;height:80px;border-radius:50%;background:var(--terracotta);color:#fff;border:none;font-size:34px;cursor:pointer;box-shadow:0 8px 22px rgba(193,80,46,.4);transition:.15s;}
+  .mic-btn:hover{transform:scale(1.06);}
+  .mic-btn.listening{animation:pulseMic 1s infinite;background:var(--terracotta-dark);}
+  @keyframes pulseMic{0%{box-shadow:0 0 0 0 rgba(193,80,46,.7);}70%{box-shadow:0 0 0 25px rgba(193,80,46,0);}100%{box-shadow:0 0 0 0 rgba(193,80,46,0);}}
+
+  .sp-transcript{min-height:22px;font-size:13px;color:var(--muted);font-style:italic;margin:10px 0;}
+  .sp-feedback{font-weight:800;font-size:14px;min-height:22px;margin-bottom:14px;}
+  .sp-feedback.ok{color:var(--green-ok);}
+  .sp-feedback.bad{color:var(--red-bad);}
+  .sp-feedback.partial{color:var(--yellow-mid);}
+
+  .sp-accuracy{font-size:44px;font-weight:900;color:var(--terracotta);margin:6px 0;}
+
+  .sp-next{margin-top:8px;background:var(--forest);color:#fff;border:none;padding:12px 26px;border-radius:10px;font-weight:700;cursor:pointer;font-size:14px;display:none;transition:.15s;}
+  .sp-next.show{display:inline-block;}
+  .sp-next:hover{background:var(--terracotta);}
+
+  .sp-unsupported{background:#fff6e6;color:#8a6300;border-radius:12px;padding:14px;font-size:13px;font-weight:600;margin-top:10px;}
+
+  /* COMPLETE SCREEN */
+  .section-complete{text-align:center;padding:30px 20px;}
+  .section-complete h3{font-size:26px;margin:0 0 10px;}
+  .section-complete.pass h3{color:var(--green-ok);}
+  .section-complete.fail h3{color:var(--red-bad);}
+  .section-complete .score-big{font-size:58px;font-weight:900;color:var(--terracotta);margin:10px 0;}
+  .section-complete .score-sub{color:var(--muted);font-size:14px;margin-bottom:20px;}
+
+  /* FINAL */
+  .final-wrap{max-width:750px;margin:0 auto;text-align:center;}
+  .final-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:36px 24px;border:1px solid var(--cream-dark);}
+  .final-card h3{font-size:24px;color:var(--forest-dark);margin:0 0 4px;}
+  .final-score-big{font-size:64px;font-weight:900;color:var(--terracotta);margin-bottom:4px;}
+  .final-score-sub{color:var(--muted);font-size:13px;margin-bottom:20px;}
+  .final-breakdown{display:flex;flex-direction:column;gap:12px;text-align:left;margin-bottom:20px;}
+  .fb-row{display:flex;align-items:center;gap:12px;}
+  .fb-row .fb-label{width:170px;font-size:13px;font-weight:700;color:var(--ink);flex-shrink:0;}
+  .fb-row .fb-bar-outer{flex:1;height:10px;background:var(--cream-dark);border-radius:6px;overflow:hidden;}
+  .fb-row .fb-bar-inner{height:100%;background:linear-gradient(90deg,var(--gold),var(--green-ok));border-radius:6px;}
+  .fb-row .fb-val{width:52px;text-align:right;font-size:12.5px;font-weight:800;color:var(--muted);}
+  .final-message{background:var(--cream);border-left:5px solid var(--terracotta);border-radius:10px;padding:16px;margin:20px 0;text-align:left;font-size:14px;color:var(--forest-dark);font-weight:600;}
+  .final-message.pass{background:var(--green-light);border-color:var(--green-ok);}
+  .final-message.fail{background:var(--red-light);border-color:var(--red-bad);}
+  .restart-btn{background:var(--gold);border:none;color:var(--forest-dark);padding:13px 28px;border-radius:10px;font-weight:800;cursor:pointer;font-size:14.5px;margin-top:10px;}
+  .nav-btn{background:var(--forest);color:#fff;border:none;padding:11px 22px;border-radius:10px;font-weight:700;cursor:pointer;font-size:13.5px;transition:.15s;}
+  .nav-btn:hover{background:var(--terracotta);}
+  .restart-btn.alt{background:var(--forest);color:#fff;margin-left:10px;}
+
+  footer.bottom{text-align:center;color:var(--muted);font-size:12px;padding:20px;}
+  footer.bottom span{color:var(--terracotta);font-weight:700;}
+
+  @media(max-width:700px){
+    nav.phasenav button{font-size:9.5px;padding:7px 4px;}
+    .mic-btn{width:70px;height:70px;font-size:30px;}
+    .listen-btn{width:54px;height:54px;font-size:22px;}
+    .fb-row .fb-label{width:100%;}
+    .fb-row{flex-wrap:wrap;}
+    .word-chip{font-size:13px;padding:5px 10px;}
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <span class="badge">🗣️ Speaking Lab · English Practice</span>
+    <h1>Speaking Practice — 7 Levels</h1>
+    <p>Words → Phrases → Sentences → Q&amp;A → Dialogue → Free Talk · Mínimo 80% para aprobar</p>
+    <nav class="phasenav" id="phaseNav">
+      <button class="phase-btn active" data-phase="1"><span class="num">LEVEL 1</span>Words</button>
+      <button class="phase-btn" data-phase="2"><span class="num">LEVEL 2</span>Phrases</button>
+      <button class="phase-btn" data-phase="3"><span class="num">LEVEL 3</span>Sentences</button>
+      <button class="phase-btn" data-phase="4"><span class="num">LEVEL 4</span>Q&amp;A</button>
+      <button class="phase-btn" data-phase="5"><span class="num">LEVEL 5</span>Dialogue</button>
+      <button class="phase-btn" data-phase="6"><span class="num">LEVEL 6</span>Free Talk</button>
+      <button class="phase-btn" data-phase="7"><span class="num">LEVEL 7</span>Final Note</button>
+    </nav>
+    <div class="progress-outer"><div class="progress-inner" id="topProgress"></div></div>
+  </div>
+</header>
+
+<main>
+  <section class="phase active" id="phase1">
+    <div class="phase-title"><span class="bar"></span><h2>Level 1 — Warm-Up Words</h2></div>
+    <p class="phase-sub">Palabras sueltas para calentar la voz. Escuchá y repetí cada palabra. 🎙️</p>
+    <div id="area1"></div>
+  </section>
+
+  <section class="phase" id="phase2">
+    <div class="phase-title"><span class="bar"></span><h2>Level 2 — Everyday Phrases</h2></div>
+    <p class="phase-sub">Frases cortas del día a día. Poné atención a la entonación.</p>
+    <div id="area2"></div>
+  </section>
+
+  <section class="phase" id="phase3">
+    <div class="phase-title"><span class="bar"></span><h2>Level 3 — Complete Sentences</h2></div>
+    <p class="phase-sub">Oraciones completas. Hablá claro y sin pausas largas.</p>
+    <div id="area3"></div>
+  </section>
+
+  <section class="phase" id="phase4">
+    <div class="phase-title"><span class="bar"></span><h2>Level 4 — Ask &amp; Answer</h2></div>
+    <p class="phase-sub">Leé la pregunta en voz alta, después respondé con la respuesta modelo.</p>
+    <div id="area4"></div>
+  </section>
+
+  <section class="phase" id="phase5">
+    <div class="phase-title"><span class="bar"></span><h2>Level 5 — Mini Dialogue</h2></div>
+    <p class="phase-sub">Practicá ambos lados del diálogo. Leé cada turno en voz alta.</p>
+    <div id="area5"></div>
+  </section>
+
+  <section class="phase" id="phase6">
+    <div class="phase-title"><span class="bar"></span><h2>Level 6 — Speak Your Mind</h2></div>
+    <p class="phase-sub">Preguntas abiertas. No hay respuesta única — hablá con tus propias palabras.</p>
+    <div id="area6"></div>
+  </section>
+
+  <section class="phase" id="phase7">
+    <div class="phase-title"><span class="bar"></span><h2>Level 7 — Final Note</h2></div>
+    <p class="phase-sub">Tu nota final de Speaking Practice. Mínimo 80% para aprobar.</p>
+    <div class="final-wrap" id="finalArea"></div>
+  </section>
+</main>
+
+<footer class="bottom">🗣️ Speaking Lab · <span>7 niveles de práctica oral</span></footer>
+
+<script>
+// ============================================================
+// CONTENT
+// ============================================================
+const LEVEL1_WORDS = [
+  { word:'Hello',        hint:'Saludo' },
+  { word:'Goodbye',      hint:'Despedida' },
+  { word:'Please',       hint:'Por favor' },
+  { word:'Thank you',    hint:'Gracias' },
+  { word:'Water',        hint:'Agua' },
+  { word:'Family',       hint:'Familia' },
+  { word:'School',       hint:'Escuela' },
+  { word:'Friend',       hint:'Amigo/a' },
+  { word:'Beautiful',    hint:'Hermoso/a' },
+  { word:'Wonderful',    hint:'Maravilloso/a' }
+];
+
+const LEVEL2_PHRASES = [
+  { phrase:'Good morning!',                hint:'Buenos días' },
+  { phrase:'How are you?',                 hint:'¿Cómo estás?' },
+  { phrase:'Nice to meet you.',            hint:'Mucho gusto' },
+  { phrase:'See you tomorrow.',            hint:'Nos vemos mañana' },
+  { phrase:'Excuse me, please.',           hint:'Disculpe, por favor' },
+  { phrase:'I am very happy today.',       hint:'Estoy muy feliz hoy' },
+  { phrase:'What is your name?',           hint:'¿Cómo te llamas?' },
+  { phrase:'Have a great day!',            hint:'¡Que tengas un gran día!' }
+];
+
+const LEVEL3_SENTENCES = [
+  { sentence:'I like to play soccer with my friends.',         hint:'Me gusta jugar fútbol con mis amigos' },
+  { sentence:'My favorite color is blue and green.',           hint:'Mi color favorito es azul y verde' },
+  { sentence:'The cat is sleeping on the sofa.',               hint:'El gato está durmiendo en el sofá' },
+  { sentence:'We are going to the park this afternoon.',       hint:'Vamos al parque esta tarde' },
+  { sentence:'My mother cooks delicious food every day.',      hint:'Mi mamá cocina comida deliciosa cada día' },
+  { sentence:'I want to be a teacher when I grow up.',         hint:'Quiero ser maestro cuando crezca' },
+  { sentence:'The book on the table belongs to my sister.',    hint:'El libro sobre la mesa es de mi hermana' },
+  { sentence:'Reading stories is my favorite hobby.',          hint:'Leer historias es mi pasatiempo favorito' }
+];
+
+const LEVEL4_QA = [
+  { q:'What is your name?',          a:'My name is Maria.',           hint:'¿Cómo te llamas?' },
+  { q:'How old are you?',            a:'I am ten years old.',          hint:'¿Cuántos años tienes?' },
+  { q:'Where do you live?',          a:'I live in a small city.',      hint:'¿Dónde vives?' },
+  { q:'What do you like to eat?',    a:'I like to eat pizza and fruit.',hint:'¿Qué te gusta comer?' },
+  { q:'Do you have any pets?',       a:'Yes, I have a dog and a cat.', hint:'¿Tienes mascotas?' },
+  { q:'What is your favorite subject?',a:'My favorite subject is English.',hint:'¿Cuál es tu materia favorita?' }
+];
+
+const LEVEL5_DIALOGUE = [
+  { speaker:'A', line:'Hello! How are you today?' },
+  { speaker:'B', line:'I am fine, thank you. And you?' },
+  { speaker:'A', line:'I am very well. What did you do yesterday?' },
+  { speaker:'B', line:'I went to the park with my family.' },
+  { speaker:'A', line:'That sounds like a lot of fun!' },
+  { speaker:'B', line:'Yes, it was a wonderful day.' },
+  { speaker:'A', line:'Would you like to go again tomorrow?' },
+  { speaker:'B', line:'Sure! Let us meet at ten o\'clock.' }
+];
+
+const LEVEL6_OPEN = [
+  { q:'Tell me about your family.',                sample:'My family has four people. My mother, my father, my sister and me.' },
+  { q:'What did you do last weekend?',             sample:'Last weekend I played soccer and watched a movie with my friends.' },
+  { q:'Describe your favorite place.',             sample:'My favorite place is the beach. It is sunny and beautiful.' },
+  { q:'What do you want to be when you grow up?',  sample:'I want to be a doctor because I like to help people.' },
+  { q:'Why do you like learning English?',         sample:'I like learning English because I can talk to people from many countries.' }
+];
+
+// ============================================================
+// STATE
+// ============================================================
+const state = {
+  level1:{ idx:0, correct:0, wrong:0, results:[] },
+  level2:{ idx:0, correct:0, wrong:0, results:[] },
+  level3:{ idx:0, correct:0, wrong:0, results:[] },
+  level4:{ idx:0, correct:0, wrong:0, results:[] },
+  level5:{ idx:0, correct:0, wrong:0, results:[] },
+  level6:{ idx:0, correct:0, wrong:0, results:[] }
+};
+
+let recognizing = false;
+const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+// ============================================================
+// UTILITIES
+// ============================================================
+function speak(text, rate=0.75){
+  if(!('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'en-US';
+  u.rate = rate;
+  u.pitch = 1;
+  const voices = window.speechSynthesis.getVoices();
+  const enVoice = voices.find(v => v.lang === 'en-US') || voices.find(v => v.lang && v.lang.startsWith('en'));
+  if(enVoice) u.voice = enVoice;
+  window.speechSynthesis.speak(u);
+}
+window.speechSynthesis && window.speechSynthesis.getVoices();
+
+function shuffle(arr){
+  const a = [...arr];
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+function normalizeText(str){
+  return str.toLowerCase()
+    .replace(/[.,!?;:'"]/g,'')
+    .replace(/\s+/g,' ')
+    .trim();
+}
+
+function wordsArray(str){
+  return normalizeText(str).split(' ').filter(Boolean);
+}
+
+// Levenshtein simple para fuzzy matching
+function levenshtein(a, b){
+  if(a === b) return 0;
+  const m = a.length, n = b.length;
+  if(m === 0) return n;
+  if(n === 0) return m;
+  const dp = Array.from({length:m+1}, () => new Array(n+1).fill(0));
+  for(let i=0;i<=m;i++) dp[i][0] = i;
+  for(let j=0;j<=n;j++) dp[0][j] = j;
+  for(let i=1;i<=m;i++){
+    for(let j=1;j<=n;j++){
+      const cost = a[i-1] === b[j-1] ? 0 : 1;
+      dp[i][j] = Math.min(dp[i-1][j]+1, dp[i][j-1]+1, dp[i-1][j-1]+cost);
+    }
+  }
+  return dp[m][n];
+}
+
+// Analiza palabra por palabra
+function analyzeWords(target, heard){
+  const tw = wordsArray(target);
+  const hw = wordsArray(heard);
+  const used = new Array(hw.length).fill(false);
+
+  return tw.map((tWord, i) => {
+    // Buscar match exacto
+    let exactIdx = hw.findIndex((h, j) => !used[j] && h === tWord);
+    if(exactIdx !== -1){
+      used[exactIdx] = true;
+      return { word: tWord, status: 'correct', original: tWord };
+    }
+    // Buscar match fuzzy (distancia <= 1 para palabras cortas, <= 2 para largas)
+    const maxDist = tWord.length <= 4 ? 1 : 2;
+    let fuzzyIdx = -1;
+    for(let j=0;j<hw.length;j++){
+      if(used[j]) continue;
+      const dist = levenshtein(tWord, hw[j]);
+      if(dist <= maxDist && dist < tWord.length){
+        fuzzyIdx = j;
+        break;
+      }
+    }
+    if(fuzzyIdx !== -1){
+      used[fuzzyIdx] = true;
+      return { word: tWord, status: 'partial', original: hw[fuzzyIdx] };
+    }
+    return { word: tWord, status: 'missed', original: null };
+  });
+}
+
+function accuracyFromAnalysis(analysis){
+  if(analysis.length === 0) return 0;
+  let score = 0;
+  analysis.forEach(a => {
+    if(a.status === 'correct') score += 1;
+    else if(a.status === 'partial') score += 0.5;
+  });
+  return score / analysis.length;
+}
+
+function playDing(){
+  try{
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [880, 1320].forEach((freq, i)=>{
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine'; osc.frequency.value = freq;
+      const start = ctx.currentTime + i*0.09;
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(0.2, start+0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start+0.25);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(start); osc.stop(start+0.28);
+    });
+  }catch(e){}
+}
+function playBuzz(){
+  try{
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sawtooth'; osc.frequency.value = 130;
+    const start = ctx.currentTime;
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(0.15, start+0.03);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start+0.35);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(start); osc.stop(start+0.38);
+  }catch(e){}
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+const phaseBtns = document.querySelectorAll('.phase-btn');
+const phases = document.querySelectorAll('.phase');
+
+function goToPhase(n){
+  phases.forEach(p => p.classList.remove('active'));
+  phaseBtns.forEach(b => b.classList.remove('active'));
+  document.getElementById('phase'+n).classList.add('active');
+  document.querySelector(`.phase-btn[data-phase="${n}"]`).classList.add('active');
+  document.getElementById('topProgress').style.width = (n/7*100)+'%';
+  window.scrollTo({top:0, behavior:'smooth'});
+  if(n == 7) renderFinalNote();
+}
+phaseBtns.forEach(btn=>{
+  btn.addEventListener('click', ()=> goToPhase(parseInt(btn.dataset.phase)));
+});
+
+// ============================================================
+// RENDER CARD (compartido)
+// ============================================================
+function renderSpeakCard(opts){
+  const {
+    containerId, levelKey, targetText, hint, contextLabel,
+    index, total, onNext
+  } = opts;
+
+  const st = state[levelKey];
+  const container = document.getElementById(containerId);
+
+  container.innerHTML = `
+    <div class="sp-card">
+      <div class="sp-top">
+        <div class="sp-num">${index+1} / ${total}</div>
+        <div class="sp-score-box">
+          <span class="good">✅ ${st.correct}</span>
+          <span class="bad">❌ ${st.wrong}</span>
+        </div>
+      </div>
+      ${contextLabel ? `<div class="sp-context"><strong>${contextLabel}</strong></div>` : ''}
+      ${hint ? `<div class="sp-hint-label">💡 ${hint}</div>` : ''}
+      <div class="sp-target" id="targetText">${targetText}</div>
+      <div class="word-chips" id="wordChips"></div>
+      <div class="sp-controls">
+        <button class="listen-btn" id="listenBtn" title="Escuchar">🔊</button>
+        <button class="mic-btn" id="micBtn" title="Hablar">🎙️</button>
+      </div>
+      <div class="sp-transcript" id="transcript">&nbsp;</div>
+      <div class="sp-feedback" id="feedback">&nbsp;</div>
+      <button class="sp-next" id="nextBtn">Next →</button>
+      <div id="unsupported"></div>
+    </div>`;
+
+  // Render chips pendientes
+  renderChips(targetText, [], container.querySelector('#wordChips'));
+
+  container.querySelector('#listenBtn').onclick = ()=> speak(targetText);
+  setTimeout(()=> speak(targetText), 400);
+
+  const micBtn = container.querySelector('#micBtn');
+  const nextBtn = container.querySelector('#nextBtn');
+  const transcriptEl = container.querySelector('#transcript');
+  const feedbackEl = container.querySelector('#feedback');
+  const chipsEl = container.querySelector('#wordChips');
+
+  if(!SpeechRecognitionAPI){
+    container.querySelector('#unsupported').innerHTML =
+      `<div class="sp-unsupported">🎙️ Speech recognition no soportado. Usá Google Chrome o Microsoft Edge.</div>`;
+    micBtn.disabled = true;
+    nextBtn.classList.add('show');
+    nextBtn.onclick = ()=> onNext();
+    return;
+  }
+
+  let answered = false;
+
+  micBtn.onclick = ()=>{
+    if(recognizing || answered) return;
+    requestMic(targetText, (result)=>{
+      answered = true;
+      micBtn.classList.remove('listening');
+      transcriptEl.textContent = `You said: "${result.heard}"`;
+      renderChips(targetText, result.analysis, chipsEl);
+
+      const acc = accuracyFromAnalysis(result.analysis);
+      const pct = Math.round(acc * 100);
+
+      if(acc >= 0.85){
+        st.correct++;
+        feedbackEl.textContent = `🎉 ¡Excelente! ${pct}% de precisión.`;
+        feedbackEl.className = 'sp-feedback ok';
+        playDing();
+      } else if(acc >= 0.65){
+        st.correct++;
+        feedbackEl.textContent = `👍 ¡Muy bien! ${pct}% de precisión.`;
+        feedbackEl.className = 'sp-feedback ok';
+        playDing();
+      } else if(acc >= 0.4){
+        st.correct++;
+        feedbackEl.textContent = `😊 Buen intento. ${pct}% — seguí practicando.`;
+        feedbackEl.className = 'sp-feedback partial';
+        playDing();
+      } else {
+        st.wrong++;
+        feedbackEl.textContent = `❌ Solo ${pct}%. Escuchá de nuevo y repetí con calma.`;
+        feedbackEl.className = 'sp-feedback bad';
+        playBuzz();
+      }
+      st.results.push({ target: targetText, heard: result.heard, accuracy: acc });
+      nextBtn.classList.add('show');
+      nextBtn.onclick = ()=> onNext();
+    });
+  };
+}
+
+function renderChips(targetText, analysis, container){
+  const words = wordsArray(targetText);
+  let html = '';
+  if(analysis.length === 0){
+    html = words.map(w => `<span class="word-chip pending">${w}</span>`).join('');
+  } else {
+    html = analysis.map(a => `<span class="word-chip ${a.status}">${a.word}</span>`).join('');
+  }
+  container.innerHTML = html;
+}
+
+function requestMic(target, callback){
+  if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia){
+    navigator.mediaDevices.getUserMedia({audio:true})
+      .then(stream=>{ stream.getTracks().forEach(t=>t.stop()); startRecognition(target, callback); })
+      .catch(()=>{
+        const fb = document.getElementById('feedback');
+        if(fb){ fb.textContent = '🎙️ Necesitás dar permiso al micrófono.'; fb.className = 'sp-feedback bad'; }
+      });
+  } else {
+    startRecognition(target, callback);
+  }
+}
+
+function startRecognition(target, callback){
+  const micBtn = document.querySelector('.mic-btn');
+  const rec = new SpeechRecognitionAPI();
+  rec.lang = 'en-US';
+  rec.interimResults = false;
+  rec.maxAlternatives = 4;
+
+  recognizing = true;
+  if(micBtn) micBtn.classList.add('listening');
+  const tr = document.getElementById('transcript');
+  if(tr) tr.textContent = 'Escuchando...';
+
+  rec.onresult = (event)=>{
+    let bestHeard = event.results[0][0].transcript;
+    let bestAcc = accuracyFromAnalysis(analyzeWords(target, bestHeard));
+    for(let i=1;i<event.results[0].length;i++){
+      const alt = event.results[0][i].transcript;
+      const acc = accuracyFromAnalysis(analyzeWords(target, alt));
+      if(acc > bestAcc){ bestAcc = acc; bestHeard = alt; }
+    }
+    const analysis = analyzeWords(target, bestHeard);
+    callback({ heard: bestHeard, analysis });
+  };
+  rec.onerror = ()=>{
+    recognizing = false;
+    if(micBtn) micBtn.classList.remove('listening');
+    const fb = document.getElementById('feedback');
+    if(fb){ fb.textContent = '🎙️ Error de audio. Intentá de nuevo.'; fb.className = 'sp-feedback bad'; }
+  };
+  rec.onend = ()=>{ recognizing = false; if(micBtn) micBtn.classList.remove('listening'); };
+  rec.start();
+}
+
+// ============================================================
+// COMPLETE SCREEN
+// ============================================================
+function renderSectionComplete(containerId, levelKey, sectionName, nextPhase){
+  const st = state[levelKey];
+  const total = st.correct + st.wrong;
+  const pct = total > 0 ? Math.round((st.correct / total) * 100) : 0;
+  const passed = pct >= 80;
+
+  document.getElementById(containerId).innerHTML = `
+    <div class="sp-card section-complete ${passed ? 'pass' : 'fail'}">
+      <div style="font-size:72px;">${passed ? '🏆' : '🔄'}</div>
+      <h3>${passed ? `¡${sectionName} completado!` : '❌ Necesitás 80% para pasar'}</h3>
+      <div class="score-big">${pct}%</div>
+      <div class="score-sub">✅ Aciertos: ${st.correct} &nbsp;|&nbsp; ❌ Fallos: ${st.wrong}</div>
+      ${passed
+        ? `<button class="nav-btn" id="continueBtn">Continuar →</button>`
+        : `<button class="restart-btn" id="retryBtn">🔄 Repetir sección</button>`}
+    </div>`;
+
+  if(passed){
+    document.getElementById('continueBtn').onclick = ()=> goToPhase(nextPhase);
+  } else {
+    document.getElementById('retryBtn').onclick = ()=>{
+      state[levelKey] = { idx:0, correct:0, wrong:0, results:[] };
+      const loaders = {
+        level1:loadLevel1, level2:loadLevel2, level3:loadLevel3,
+        level4:loadLevel4, level5:loadLevel5, level6:loadLevel6
+      };
+      loaders[levelKey]();
+    };
+  }
+}
+
+// ============================================================
+// LEVEL 1 — WORDS
+// ============================================================
+function loadLevel1(){
+  const st = state.level1;
+  if(st.idx >= LEVEL1_WORDS.length){
+    return renderSectionComplete('area1', 'level1', 'Level 1 — Words', 2);
+  }
+  const item = LEVEL1_WORDS[st.idx];
+  renderSpeakCard({
+    containerId:'area1', levelKey:'level1',
+    targetText: item.word, hint: item.hint,
+    contextLabel:'LEVEL 1 · WARM-UP WORD',
+    index: st.idx, total: LEVEL1_WORDS.length,
+    onNext: ()=>{ st.idx++; loadLevel1(); }
+  });
+}
+
+// ============================================================
+// LEVEL 2 — PHRASES
+// ============================================================
+function loadLevel2(){
+  const st = state.level2;
+  if(st.idx >= LEVEL2_PHRASES.length){
+    return renderSectionComplete('area2', 'level2', 'Level 2 — Phrases', 3);
+  }
+  const item = LEVEL2_PHRASES[st.idx];
+  renderSpeakCard({
+    containerId:'area2', levelKey:'level2',
+    targetText: item.phrase, hint: item.hint,
+    contextLabel:'LEVEL 2 · EVERYDAY PHRASE',
+    index: st.idx, total: LEVEL2_PHRASES.length,
+    onNext: ()=>{ st.idx++; loadLevel2(); }
+  });
+}
+
+// ============================================================
+// LEVEL 3 — SENTENCES
+// ============================================================
+function loadLevel3(){
+  const st = state.level3;
+  if(st.idx >= LEVEL3_SENTENCES.length){
+    return renderSectionComplete('area3', 'level3', 'Level 3 — Sentences', 4);
+  }
+  const item = LEVEL3_SENTENCES[st.idx];
+  renderSpeakCard({
+    containerId:'area3', levelKey:'level3',
+    targetText: item.sentence, hint: item.hint,
+    contextLabel:'LEVEL 3 · COMPLETE SENTENCE',
+    index: st.idx, total: LEVEL3_SENTENCES.length,
+    onNext: ()=>{ st.idx++; loadLevel3(); }
+  });
+}
+
+// ============================================================
+// LEVEL 4 — Q&A
+// ============================================================
+function loadLevel4(){
+  const st = state.level4;
+  if(st.idx >= LEVEL4_QA.length){
+    return renderSectionComplete('area4', 'level4', 'Level 4 — Q&A', 5);
+  }
+  const item = LEVEL4_QA[st.idx];
+  renderSpeakCard({
+    containerId:'area4', levelKey:'level4',
+    targetText: item.a, hint: `Pregunta: "${item.q}" — ${item.hint}`,
+    contextLabel:'LEVEL 4 · ASK & ANSWER',
+    index: st.idx, total: LEVEL4_QA.length,
+    onNext: ()=>{ st.idx++; loadLevel4(); }
+  });
+}
+
+// ============================================================
+// LEVEL 5 — DIALOGUE
+// ============================================================
+function loadLevel5(){
+  const st = state.level5;
+  if(st.idx >= LEVEL5_DIALOGUE.length){
+    return renderSectionComplete('area5', 'level5', 'Level 5 — Dialogue', 6);
+  }
+  const item = LEVEL5_DIALOGUE[st.idx];
+  const speakerColor = item.speaker === 'A' ? 'var(--forest)' : 'var(--terracotta)';
+  renderSpeakCard({
+    containerId:'area5', levelKey:'level5',
+    targetText: item.line, hint: `Hablante ${item.speaker}`,
+    contextLabel:`LEVEL 5 · DIALOGUE — SPEAKER ${item.speaker}`,
+    index: st.idx, total: LEVEL5_DIALOGUE.length,
+    onNext: ()=>{ st.idx++; loadLevel5(); }
+  });
+}
+
+// ============================================================
+// LEVEL 6 — FREE TALK
+// ============================================================
+function loadLevel6(){
+  const st = state.level6;
+  if(st.idx >= LEVEL6_OPEN.length){
+    return renderSectionComplete('area6', 'level6', 'Level 6 — Free Talk', 7);
+  }
+  const item = LEVEL6_OPEN[st.idx];
+  renderSpeakCard({
+    containerId:'area6', levelKey:'level6',
+    targetText: item.sample, hint: item.q,
+    contextLabel:'LEVEL 6 · SPEAK YOUR MIND (respuesta modelo)',
+    index: st.idx, total: LEVEL6_OPEN.length,
+    onNext: ()=>{ st.idx++; loadLevel6(); }
+  });
+}
+
+// ============================================================
+// LEVEL 7 — FINAL NOTE
+// ============================================================
+function renderFinalNote(){
+  const levels = [
+    { label:'Level 1 · Words',     key:'level1', max:LEVEL1_WORDS.length },
+    { label:'Level 2 · Phrases',   key:'level2', max:LEVEL2_PHRASES.length },
+    { label:'Level 3 · Sentences', key:'level3', max:LEVEL3_SENTENCES.length },
+    { label:'Level 4 · Q&A',       key:'level4', max:LEVEL4_QA.length },
+    { label:'Level 5 · Dialogue',  key:'level5', max:LEVEL5_DIALOGUE.length },
+    { label:'Level 6 · Free Talk', key:'level6', max:LEVEL6_OPEN.length }
+  ];
+
+  let totalCorrect = 0, totalWrong = 0;
+  const breakdown = levels.map(l => {
+    const st = state[l.key];
+    totalCorrect += st.correct;
+    totalWrong += st.wrong;
+    return { ...l, correct: st.correct, wrong: st.wrong };
+  });
+
+  const total = totalCorrect + totalWrong;
+  const finalPct = total > 0 ? Math.round((totalCorrect / total) * 100) : 0;
+  const passed = finalPct >= 80;
+
+  let nota = '1.0';
+  let message = '';
+  let messageClass = '';
+  if(finalPct >= 95){ nota = '10'; message = '🏆 ¡Perfecto! Nivel de pronunciación nativo.'; messageClass = 'pass'; }
+  else if(finalPct >= 90){ nota = '9'; message = '🌟 ¡Excelente! Tu speaking es sobresaliente.'; messageClass = 'pass'; }
+  else if(finalPct >= 85){ nota = '8'; message = '⭐ ¡Muy bien! Hablás con claridad y confianza.'; messageClass = 'pass'; }
+  else if(finalPct >= 80){ nota = '7'; message = '✅ ¡Aprobado! Buen nivel de speaking.'; messageClass = 'pass'; }
+  else if(finalPct >= 65){ nota = '5'; message = '⚠️ Casi. Necesitás 80%. Repetí los niveles con menos puntaje.'; messageClass = ''; }
+  else { nota = '1.0 - 4.9'; message = '🔴 No aprobaste. Repetí Speaking Lab desde el nivel 1.'; messageClass = 'fail'; }
+
+  // Palabras más falladas
+  const allResults = [];
+  Object.values(state).forEach(st => {
+    st.results.forEach(r => {
+      if(r.accuracy < 0.5) allResults.push(r);
+    });
+  });
+
+  let failedHTML = '';
+  if(allResults.length > 0){
+    failedHTML = `
+      <div class="final-message fail" style="margin-top:16px;">
+        <strong style="color:var(--red-bad);">🔴 Frases con menor precisión (${allResults.length}):</strong>
+        <div style="margin-top:10px;font-size:13px;font-weight:500;">
+          ${allResults.slice(0,8).map(r => `
+            <div style="padding:6px 0;border-bottom:1px solid #e8c5bd;">
+              <div style="color:var(--forest-dark);font-weight:700;">"${r.target}"</div>
+              <div style="color:var(--muted);font-size:12px;">Escuchado: "${r.heard}" · Precisión: ${Math.round(r.accuracy*100)}%</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>`;
+  }
+
+  document.getElementById('finalArea').innerHTML = `
+    <div class="final-card">
+      <h3>Speaking Lab — Nota Final</h3>
+      <div class="final-score-big" style="color:${passed ? 'var(--green-ok)' : 'var(--red-bad)'};">${finalPct}%</div>
+      <div class="final-score-sub">✅ ${totalCorrect} aciertos · ❌ ${totalWrong} fallos</div>
+      <div style="font-size:40px;font-weight:900;color:var(--gold-dark);margin:16px 0;">NOTA: ${nota}</div>
+      <div class="final-message ${messageClass}">${message}</div>
+      <div class="final-breakdown">
+        ${breakdown.map(r => {
+          const pct = r.max > 0 ? Math.round((r.correct / r.max) * 100) : 0;
+          return `
+            <div class="fb-row">
+              <div class="fb-label">${r.label}</div>
+              <div class="fb-bar-outer"><div class="fb-bar-inner" style="width:${pct}%;"></div></div>
+              <div class="fb-val">${r.correct}/${r.max}</div>
+            </div>`;
+        }).join('')}
+      </div>
+      ${failedHTML}
+      <button class="restart-btn" id="restartAllBtn">🎤 Repetir Speaking Lab</button>
+    </div>`;
+
+  document.getElementById('restartAllBtn').onclick = resetAll;
+}
+
+function resetAll(){
+  ['level1','level2','level3','level4','level5','level6'].forEach(k => {
+    state[k] = { idx:0, correct:0, wrong:0, results:[] };
+  });
+  loadLevel1(); loadLevel2(); loadLevel3(); loadLevel4(); loadLevel5(); loadLevel6();
+  goToPhase(1);
+}
+
+// ============================================================
+// INIT
+// ============================================================
+loadLevel1();
+loadLevel2();
+loadLevel3();
+loadLevel4();
+loadLevel5();
+loadLevel6();
+goToPhase(1);
+
+setTimeout(()=>{
+  if('speechSynthesis' in window) window.speechSynthesis.getVoices();
+}, 500);
+</script>
+</body>
+</html>
